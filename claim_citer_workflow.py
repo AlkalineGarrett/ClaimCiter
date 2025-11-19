@@ -585,8 +585,8 @@ def main():
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python claim_citer.py <claim_text>")
-        print('Example: python claim_citer.py "Men are taller than women on average"')
+        print("Usage: python claim_citer_workflow.py <claim_text>")
+        print('Example: python claim_citer_workflow.py "Men are taller than women on average"')
         sys.exit(1)
     
     claim = sys.argv[1]

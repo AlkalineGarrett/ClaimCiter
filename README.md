@@ -1,12 +1,17 @@
 # Claim Citer
 
-A LangGraph-based workflow for automatically finding evidence and citations for claims by searching the web, scraping content, and evaluating relevance using LLMs.
+A LangGraph-based system for automatically finding evidence and citations for claims by searching the web, scraping content, and evaluating relevance using LLMs.
 
 by Garrett Jones
 
 ## Overview
 
-Claim Citer uses an iterative search and evaluation process to find the best supporting URL for a given claim. It combines:
+Claim Citer provides two implementations for finding supporting URLs for claims:
+
+1. **`claim_citer_workflow.py`** - A structured workflow with explicit search, scrape, and evaluation phases
+2. **`claim_citer_agent.py`** - An agent-based approach where an LLM autonomously decides when to search and scrape using tools
+
+Both implementations combine:
 - **LLM-powered search query generation** - Generates search queries based on the claim
 - **Web search** - Uses Firecrawl to search the web for relevant URLs
 - **Content scraping** - Extracts and processes web page content
@@ -33,27 +38,55 @@ You'll need API keys for two services:
 
 ## Usage
 
-Run the script with a claim as an argument:
+### Workflow Approach
+
+Run the workflow script with a claim as an argument:
 
 ```bash
-python claim_citer.py "Men are taller than women on average"
+python claim_citer_workflow.py "Men are taller than women on average"
 ```
 
-### Output
-
-The script provides:
+**Output:**
 - **Final URL**: The best supporting URL found (highest score)
 - **Alternative URLs**: Other URLs with the same score as the final URL
 - **Logs**: Detailed logs saved in the `logs/` directory:
   - `scrape-{hash}.txt` - All scraped content
   - `model-output-{hash}.txt` - All LLM responses
 
+### Agent Approach
+
+Run the agent script with a claim as an argument:
+
+```bash
+python claim_citer_agent.py "Men are taller than women on average"
+```
+
+**Output:**
+- **Status**: "found" or "not_found"
+- **Best URL**: The best supporting URL found
+- **Alternative URLs**: Other URLs that support the claim
+- **Logs**: Detailed logs saved in the `logs/` directory:
+  - `model-output-{hash}.txt` - All LLM responses and tool calls
+  - `tool-output-{hash}.txt` - All tool execution results
+- **Timing**: Individual scrape times and total process time
+
 ## Configuration
 
-Key parameters in `SingleClaimCiter` class:
+### Workflow Configuration
+
+Key parameters in `ClaimCiterWorkflow` class:
 
 - `CONTENT_SIZE_LIMIT = 8000` - Maximum characters from scraped content to evaluate
 - `DEFAULT_MAX_ITERATIONS = 2` - Maximum number of search iterations
 - `MAX_URLS_PER_DOMAIN = 3` - Maximum URLs to process per domain per iteration
+- `model_name = "gpt-4o"` - LLM model to use (default: gpt-4o)
+- `temperature = 0.3` - LLM temperature for deterministic outputs
+
+### Agent Configuration
+
+Key parameters in `ClaimCiterAgent` class:
+
+- `MAX_TURNS = 20` - Maximum number of agent turns
+- `CONTENT_SIZE_LIMIT = 8000` - Maximum characters from scraped content to evaluate
 - `model_name = "gpt-4o"` - LLM model to use (default: gpt-4o)
 - `temperature = 0.3` - LLM temperature for deterministic outputs
