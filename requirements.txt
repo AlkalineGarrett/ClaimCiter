@@ -1,0 +1,4 @@
+langgraph==1.0.3
+langchain==1.0.7
+langchain-openai==1.0.3
+firecrawl-py==4.8.0
