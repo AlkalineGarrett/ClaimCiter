@@ -1,17 +1,19 @@
 # Claim Citer
 
-A LangGraph-based system for automatically finding evidence and citations for claims by searching the web, scraping content, and evaluating relevance using LLMs.
+A system for automatically finding evidence and citations for claims by searching the web, scraping content, and evaluating relevance using LLMs.
 
 by Garrett Jones
 
 ## Overview
 
-Claim Citer provides two implementations for finding supporting URLs for claims:
+Claim Citer provides four implementations for finding supporting URLs for claims:
 
-1. **`claim_citer_workflow.py`** - A structured workflow with explicit search, scrape, and evaluation phases
-2. **`claim_citer_agent.py`** - An agent-based approach where an LLM autonomously decides when to search and scrape using tools
+1. **`claim_citer_workflow.py`** - A structured workflow with explicit search, scrape, and evaluation phases (LangGraph-based)
+2. **`claim_citer_agent.py`** - An agent-based approach where an LLM autonomously decides when to search and scrape using tools (LangGraph-based)
+3. **`claim_citer_langchain_workflow.py`** - A structured workflow with explicit search, scrape, and evaluation phases (LangChain-only, no LangGraph)
+4. **`claim_citer_langchain_agent.py`** - An agent-based approach where an LLM autonomously decides when to search and scrape using tools (LangChain-only, no LangGraph)
 
-Both implementations combine:
+All implementations combine:
 - **LLM-powered search query generation** - Generates search queries based on the claim
 - **Web search** - Uses Firecrawl to search the web for relevant URLs
 - **Content scraping** - Extracts and processes web page content
@@ -38,7 +40,7 @@ You'll need API keys for two services:
 
 ## Usage
 
-### Workflow Approach
+### Workflow Approach (LangGraph)
 
 Run the workflow script with a claim as an argument:
 
@@ -53,7 +55,7 @@ python claim_citer_workflow.py "Men are taller than women on average"
   - `scrape-{hash}.txt` - All scraped content
   - `model-output-{hash}.txt` - All LLM responses
 
-### Agent Approach
+### Agent Approach (LangGraph)
 
 Run the agent script with a claim as an argument:
 
@@ -70,11 +72,31 @@ python claim_citer_agent.py "Men are taller than women on average"
   - `tool-output-{hash}.txt` - All tool execution results
 - **Timing**: Individual scrape times and total process time
 
+### Workflow Approach (LangChain-only)
+
+Run the langchain workflow script with a claim as an argument:
+
+```bash
+python claim_citer_langchain_workflow.py "Men are taller than women on average"
+```
+
+**Output:** Same as the LangGraph workflow approach above.
+
+### Agent Approach (LangChain-only)
+
+Run the langchain agent script with a claim as an argument:
+
+```bash
+python claim_citer_langchain_agent.py "Men are taller than women on average"
+```
+
+**Output:** Same as the LangGraph agent approach above.
+
 ## Configuration
 
 ### Workflow Configuration
 
-Key parameters in `ClaimCiterWorkflow` class:
+Key parameters in `SingleClaimCiter` class (applies to both `claim_citer_workflow.py` and `claim_citer_langchain_workflow.py`):
 
 - `CONTENT_SIZE_LIMIT = 8000` - Maximum characters from scraped content to evaluate
 - `DEFAULT_MAX_ITERATIONS = 2` - Maximum number of search iterations
@@ -84,7 +106,7 @@ Key parameters in `ClaimCiterWorkflow` class:
 
 ### Agent Configuration
 
-Key parameters in `ClaimCiterAgent` class:
+Key parameters in `ClaimCiterAgent` class (applies to both `claim_citer_agent.py` and `claim_citer_langchain_agent.py`):
 
 - `MAX_TURNS = 20` - Maximum number of agent turns
 - `CONTENT_SIZE_LIMIT = 8000` - Maximum characters from scraped content to evaluate

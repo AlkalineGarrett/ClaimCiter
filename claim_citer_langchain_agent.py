@@ -1,10 +1,9 @@
 """
-ClaimCiterAgent - A LangGraph-based AI agent for finding evidence URLs that support claims.
+ClaimCiterAgent - An AI agent for finding evidence URLs that support claims.
 by Garrett Jones
 """
 
 from typing import TypedDict, Annotated, List, Dict, Any, Optional
-from langgraph.graph import StateGraph, END, START
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
@@ -85,8 +84,6 @@ class ClaimCiterAgent:
         self.tools = [self.search_tool, self.scrape_tool]
         
         self.llm_with_tools = self.llm.bind_tools(self.tools)
-        
-        self.graph = self._build_graph()
     
     def _create_search_tool(self):
         @tool
@@ -121,27 +118,7 @@ class ClaimCiterAgent:
         
         return scrape
     
-    
-    def _build_graph(self) -> StateGraph:
-        workflow = StateGraph(AgentState)
-        
-        workflow.add_node("agent", self._agent_node)
-        workflow.add_node("tools", self._tools_node)
-        
-        workflow.add_edge(START, "agent")
-        workflow.add_conditional_edges(
-            "agent",
-            self._should_continue,
-            {
-                "continue": "tools",
-                "finalize": END
-            }
-        )
-        workflow.add_edge("tools", "agent")
-        
-        return workflow.compile()
-    
-    def _agent_node(self, state: AgentState) -> AgentState:
+    def _run_agent_step(self, state: AgentState) -> AgentState:
         """Agent node that decides what action to take and calls tools."""
         claim = state["claim"]
         messages = state["messages"]
@@ -228,7 +205,7 @@ Provide the final answer in this JSON format:
         
         return state
     
-    def _tools_node(self, state: AgentState) -> AgentState:
+    def _run_tools(self, state: AgentState) -> AgentState:
         """Execute tools and add results to messages."""
         messages = state["messages"]
         last_message = messages[-1]
@@ -256,20 +233,9 @@ Provide the final answer in this JSON format:
         state["messages"] = messages
         return state
     
-    def _should_continue(self, state: AgentState) -> str:
-        """Determine if we should continue or finalize."""
-        if state["turn_count"] >= self.MAX_TURNS:
-            return "finalize"
-        
-        last_message = state["messages"][-1]
-        if not last_message.tool_calls:
-            return "finalize"
-        
-        return "continue"
-    
     def find_citation(self, claim: str) -> Dict[str, Any]:
         """Main entry point to find citation for a claim."""
-        initial_state: AgentState = {
+        state: AgentState = {
             "claim": claim,
             "messages": [],
             "turn_count": 0,
@@ -280,15 +246,27 @@ Provide the final answer in this JSON format:
         print("=" * 80)
         
         start_time = time.time()
-        final_state = self.graph.invoke(initial_state)
+        
+        while True:
+            state = self._run_agent_step(state)
+            
+            if state["turn_count"] >= self.MAX_TURNS:
+                break
+            
+            last_message = state["messages"][-1]
+            if not last_message.tool_calls:
+                break
+            
+            state = self._run_tools(state)
+        
         total_elapsed = time.time() - start_time
         
-        result = self._extract_result(final_state["messages"])
-        final_state["result"] = result
+        result = self._extract_result(state["messages"])
+        state["result"] = result
         
         print("\n📝 Conversation:")
         print("-" * 80)
-        for i, msg in enumerate(final_state["messages"], 1):
+        for i, msg in enumerate(state["messages"], 1):
             print(f"{i}. {msg.__class__.__name__}: {msg.content[:200]}...")
         
         print("\n" + "=" * 80)
@@ -317,8 +295,8 @@ Provide the final answer in this JSON format:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python claim_citer_agent.py <claim_text>")
-        print('Example: python claim_citer_agent.py "Men are taller than women on average"')
+        print("Usage: python claim_citer_langchain_agent.py <claim_text>")
+        print('Example: python claim_citer_langchain_agent.py "Men are taller than women on average"')
         sys.exit(1)
     
     claim = sys.argv[1]
